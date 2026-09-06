@@ -16,7 +16,7 @@ function App() {
 
   const [selectedLevel, setSelectedLevel] = useState<string>('Tất cả');
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [showPinyin, setShowPinyin] = useState<boolean>(true);
+  const [showPinyin, setShowPinyin] = useState<boolean>(false);
   const [showGhost, setShowGhost] = useState<boolean>(true);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(false);

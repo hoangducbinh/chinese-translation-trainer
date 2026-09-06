@@ -55,10 +55,11 @@ export const PracticeCard: React.FC<PracticeCardProps> = ({
   const normalizedPinyinRaw = normalizeText(sentence.pinyinRaw || sentence.pinyin || '');
 
   // Calculate character statuses for the Chinese character boxes
+  const chinesePunctuation = '，。！？、；：‘’“”「」『』（）［］【】《》〈〉…—～·,.!?;:\'"()[]';
+  const isChineseInputChar = (char: string) =>
+    /[\u3400-\u9fff]/.test(char) || chinesePunctuation.includes(char);
+  const userChars = Array.from(inputValue).filter(isChineseInputChar);
   const charStatuses: { status: CharStatus; userChar?: string }[] = targetChars.map((targetChar, idx) => {
-    // If user input contains Chinese characters directly
-    const userChars = /[\u3400-\u9fff]/.test(inputValue) ? Array.from(inputValue) : [];
-
     if (idx < userChars.length) {
       const userChar = userChars[idx];
       if (userChar === targetChar) {
