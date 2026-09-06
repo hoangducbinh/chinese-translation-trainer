@@ -96,31 +96,118 @@ export function playErrorBuzz() {
 }
 
 /**
+ * Get all available Chinese voices from browser SpeechSynthesis
+ */
+export function getChineseVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return [];
+  }
+  const voices = window.speechSynthesis.getVoices();
+  const chineseVoices = voices.filter((v) => {
+    const lang = v.lang.toLowerCase();
+    const name = v.name.toLowerCase();
+    return (
+      lang.startsWith('zh') ||
+      lang.includes('cmn') ||
+      lang.includes('yue') ||
+      name.includes('chinese') ||
+      name.includes('mandarin') ||
+      name.includes('cantonese')
+    );
+  });
+
+  return chineseVoices.sort((a, b) => getVoiceQualityScore(b) - getVoiceQualityScore(a));
+}
+
+function getVoiceQualityScore(voice: SpeechSynthesisVoice): number {
+  const name = voice.name.toLowerCase();
+  const lang = voice.lang.toLowerCase();
+  let score = 0;
+
+  if (name.includes('enhanced') || name.includes('premium') || name.includes('natural')) score += 100;
+  if (name.includes('google')) score += 80;
+  if (name.includes('ting-ting') || name.includes('tingting') || name.includes('mei-jia') || name.includes('meijia')) {
+    score += 50;
+  }
+  if (lang === 'zh-cn' || lang.startsWith('zh-cn')) score += 20;
+  if (name.includes('eddy') || name.includes('flo') || name.includes('grandma') || name.includes('grandpa')) {
+    score -= 10;
+  }
+
+  return score;
+}
+
+/**
+ * Cancel any ongoing speech
+ */
+export function cancelSpeech() {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+/**
  * Speak Chinese text using Web Speech Synthesis API
  */
-export function speakChinese(text: string, rate: number = 0.85) {
-  if (!('speechSynthesis' in window)) {
+export function speakChinese(
+  text: string,
+  voiceURI?: string | null,
+  rate: number = 0.85,
+  onEnd?: () => void,
+  onError?: () => void
+): SpeechSynthesisUtterance | null {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     console.warn('Speech synthesis not supported in this browser.');
-    return;
+    if (onEnd) onEnd();
+    return null;
   }
 
   // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
+  cancelSpeech();
 
-  // Strip punctuation if needed, or keep for natural pause
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'zh-CN';
-  utterance.rate = rate; // slightly slower for language learners
+  utterance.rate = rate;
+  utterance.pitch = 1;
+  utterance.volume = 1;
 
-  // Attempt to select a high quality Chinese voice if available
   const voices = window.speechSynthesis.getVoices();
-  const chineseVoice = voices.find(
-    v => v.lang.includes('zh') || v.lang.includes('cmn') || v.name.includes('Chinese')
-  );
+  let matchedVoice: SpeechSynthesisVoice | undefined;
 
-  if (chineseVoice) {
-    utterance.voice = chineseVoice;
+  // 1. Try matching by explicit voiceURI
+  if (voiceURI) {
+    matchedVoice = voices.find((v) => v.voiceURI === voiceURI || v.name === voiceURI);
+  }
+
+  // 2. Fallback to any Chinese voice
+  if (!matchedVoice) {
+    matchedVoice = voices.find((v) => {
+      const lang = v.lang.toLowerCase();
+      const name = v.name.toLowerCase();
+      return (
+        lang.startsWith('zh') ||
+        lang.includes('cmn') ||
+        lang.includes('yue') ||
+        name.includes('chinese') ||
+        name.includes('mandarin') ||
+        name.includes('cantonese')
+      );
+    });
+  }
+
+  if (matchedVoice) {
+    utterance.voice = matchedVoice;
+    utterance.lang = matchedVoice.lang;
+  }
+
+  if (onEnd) {
+    utterance.onend = () => onEnd();
+  }
+
+  if (onError) {
+    utterance.onerror = () => onError();
   }
 
   window.speechSynthesis.speak(utterance);
+  return utterance;
 }

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Volume2, VolumeX, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, Eye, EyeOff, RotateCcw, Headphones } from 'lucide-react';
 
 interface HeaderProps {
+  levels?: string[];
   currentLevel: string;
   onSelectLevel: (level: string) => void;
   showPinyin: boolean;
@@ -11,10 +11,15 @@ interface HeaderProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   onResetStats: () => void;
+  isLoading?: boolean;
+  onOpenVoiceSettings: () => void;
+  speechRate?: number;
 }
 
-
 export const Header: React.FC<HeaderProps> = ({
+  levels,
+  currentLevel,
+  onSelectLevel,
   showPinyin,
   onTogglePinyin,
   showGhost,
@@ -22,9 +27,35 @@ export const Header: React.FC<HeaderProps> = ({
   soundEnabled,
   onToggleSound,
   onResetStats,
+  isLoading,
+  onOpenVoiceSettings,
+  speechRate,
 }) => {
+
   return (
     <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-100">
+      {/* Left controls: Level filter & sync status */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {levels?.map((level) => (
+          <button
+            key={level}
+            onClick={() => onSelectLevel(level)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              currentLevel === level
+                ? 'bg-neutral-900 text-white shadow-xs'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {level}
+          </button>
+        ))}
+        {isLoading && (
+          <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded-md border border-amber-200 animate-pulse">
+            Đang tải dữ liệu...
+          </span>
+        )}
+      </div>
+
       {/* Right controls: toggles & reset */}
       <div className="flex items-center gap-1.5">
         {/* Toggle Pinyin */}
@@ -65,6 +96,20 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </button>
+
+        {/* Voice Settings */}
+        <button
+          onClick={onOpenVoiceSettings}
+          title="Đổi giọng đọc tiếng Trung & tốc độ"
+          className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-amber-800 hover:bg-amber-50 hover:border-amber-200 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+        >
+          <Headphones className="w-4 h-4 text-amber-600" />
+          {speechRate && (
+            <span className="hidden sm:inline text-[11px] font-mono font-medium text-gray-500">
+              {speechRate.toFixed(2)}x
+            </span>
+          )}
         </button>
 
         {/* Reset stats */}

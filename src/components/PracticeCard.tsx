@@ -1,15 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Volume2, CheckCircle2 } from 'lucide-react';
-import type { SentenceItem } from '../data/sentences';
+import type { SentenceItem } from '../types/sentence';
 import { CharacterBox } from './CharacterBox';
 import type { CharStatus } from './CharacterBox';
-import { speakChinese, playKeyStrokeSound, playSuccessChime, playErrorBuzz } from '../utils/audio';
+import { playKeyStrokeSound, playSuccessChime, playErrorBuzz } from '../utils/audio';
 
 interface PracticeCardProps {
   sentence: SentenceItem;
   showPinyin: boolean;
   showGhost: boolean;
   soundEnabled: boolean;
+  isSpeaking: boolean;
+  onSpeak: (text: string) => void;
   onNext: () => void;
   onCharCorrect: (count: number) => void;
   onCompleteSentence: () => void;
@@ -20,12 +22,13 @@ export const PracticeCard: React.FC<PracticeCardProps> = ({
   showPinyin,
   showGhost,
   soundEnabled,
+  isSpeaking,
+  onSpeak,
   onNext,
   onCharCorrect,
   onCompleteSentence,
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isComposingRef = useRef(false);
@@ -42,14 +45,14 @@ export const PracticeCard: React.FC<PracticeCardProps> = ({
 
   // Normalize string for pinyin comparison (remove spaces & tone marks)
   const normalizeText = (str: string) => {
-    return str
+    return (str || '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
   };
 
-  const normalizedPinyinRaw = normalizeText(sentence.pinyinRaw);
+  const normalizedPinyinRaw = normalizeText(sentence.pinyinRaw || sentence.pinyin || '');
 
   // Calculate character statuses for the Chinese character boxes
   const charStatuses: { status: CharStatus; userChar?: string }[] = targetChars.map((targetChar, idx) => {
@@ -147,11 +150,7 @@ export const PracticeCard: React.FC<PracticeCardProps> = ({
   // Play pronunciation
   const handleSpeak = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setIsSpeaking(true);
-    speakChinese(sentence.chinese);
-    setTimeout(() => {
-      setIsSpeaking(false);
-    }, 2000);
+    onSpeak(sentence.chinese);
   };
 
   return (
